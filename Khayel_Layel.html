@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Esad Service Group</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url("./Esad.jpg");
+            background-size: contain; /* Ensure the entire image fits within the viewport */
+            background-position: top center; /* Align the image to the top center */
+            background-repeat: no-repeat;
+            min-height: 100vh; /* Ensure the body covers the entire viewport height */
+        }
+
+        .container {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            color: white; /* Assuming text needs to be white for visibility on the background */
+        }
+
+        /* Mobile styles */
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            p {
+                font-size: 1em;
+            }
+        }
+
+        /* Tablet styles */
+        @media (min-width: 601px) and (max-width: 900px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            p {
+                font-size: 1.2em;
+            }
+        }
+
+        /* Desktop styles */
+        @media (min-width: 901px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2.5em;
+            }
+
+            p {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Content goes here -->
+</div>
+
+<script type="text/javascript" charset="utf-8">
+  (function (g, e, n, es, ys) {
+    g['_genesysJs'] = e;
+    g[e] = g[e] || function () {
+      (g[e].q = g[e].q || []).push(arguments)
+    };
+    g[e].t = 1 * new Date();
+    g[e].c = es;
+    ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
+  })(window, 'Genesys', 'https://apps.mypurecloud.de/genesys-bootstrap/genesys.min.js', {
+    environment: 'prod-euc1',
+    deploymentId: 'a1ef8366-a748-4f4e-8211-7f1850691525'
+  });
+</script>
+
+<script>
+    // Function to detect if the device is mobile
+    function isMobileDevice() {
+        return /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    }
+
+    // Apply specific styles or scripts based on the device
+    window.addEventListener('DOMContentLoaded', function() {
+        if (isMobileDevice()) {
+            document.body.style.backgroundColor = 'lightblue';
+            // Add any other mobile-specific functionality here
+        } else {
+            // Web-specific functionality
+            document.body.style.backgroundColor = '';
+        }
+    });
+
+    // Example JavaScript to add mobile-specific functionality on resize
+    window.addEventListener('resize', function() {
+        if (isMobileDevice() || window.innerWidth < 600) {
+            document.body.style.backgroundColor = 'lightblue';
+        } else {
+            document.body.style.backgroundColor = '';
+        }
+    });
+</script>
+
+</body>
+</html>

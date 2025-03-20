@@ -9,19 +9,21 @@
     <h1>Genesys Cloud Recording Downloader</h1>
     <button onclick="startDownload()">Download Recordings</button>
     <p id="status">Status: Waiting</p>
+    <progress id="progressBar" value="0" max="100" style="width:100%; display:none;"></progress>
     
     <script>
         async function startDownload() {
             document.getElementById("status").innerText = "Status: Authenticating...";
+            document.getElementById("progressBar").style.display = "block";
+            document.getElementById("progressBar").value = 10;
             
             const CLIENT_ID = "485e10e6-44be-4a4f-adf5-f4661cdaa335";
             const CLIENT_SECRET = "dqakz-pDeRaekvSEVfFtz8dgbeLqHNdasIhEFOJpmG4";
-            const REGION = "eu-west-1"; // Example: "mypurecloud.ie"
+            const REGION = "eu-west-1";
             const START_DATE = "2025-03-01T13:00:00.000Z";
             const END_DATE = "2025-03-01T14:00:00.000Z";
             
             try {
-                // Step 1: Authenticate
                 let authResponse = await fetch(`https://login.${REGION}/oauth/token`, {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -32,8 +34,8 @@
                 let authData = await authResponse.json();
                 let accessToken = authData.access_token;
                 document.getElementById("status").innerText = "Status: Fetching Conversations...";
+                document.getElementById("progressBar").value = 30;
                 
-                // Step 2: Fetch Conversations
                 let conversationsResponse = await fetch(`https://api.${REGION}/api/v2/analytics/conversations/details/query`, {
                     method: "POST",
                     headers: {
@@ -61,8 +63,8 @@
                 }
                 
                 document.getElementById("status").innerText = "Status: Requesting Batch Download...";
+                document.getElementById("progressBar").value = 50;
                 
-                // Step 3: Request Batch Download
                 let batchResponse = await fetch(`https://api.${REGION}/api/v2/recording/batchrequests`, {
                     method: "POST",
                     headers: {
@@ -74,30 +76,39 @@
                 let batchData = await batchResponse.json();
                 let batchId = batchData.id;
                 
-                // Step 4: Poll for Completion
                 let batchStatus = "Processing";
                 while (batchStatus === "Processing") {
-                    await new Promise(r => setTimeout(r, 5000)); // Wait 5 sec
+                    await new Promise(r => setTimeout(r, 5000));
                     let statusResponse = await fetch(`https://api.${REGION}/api/v2/recording/batchrequests/${batchId}`, {
                         headers: { "Authorization": `Bearer ${accessToken}` }
                     });
                     let statusData = await statusResponse.json();
                     batchStatus = statusData.status;
+                    document.getElementById("progressBar").value = 75;
                     
                     if (batchStatus === "Completed") {
                         document.getElementById("status").innerText = "Status: Downloading...";
+                        document.getElementById("progressBar").value = 90;
+                        
                         for (let recording of statusData.results) {
                             if (!recording.errorMsg) {
-                                window.open(recording.resultUrl, '_blank');
+                                let a = document.createElement("a");
+                                a.href = recording.resultUrl;
+                                a.download = "recording.mp3";
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
                             }
                         }
-                        document.getElementById("status").innerText = "Status: Completed";
+                        document.getElementById("status").innerText = "Status: Download Complete";
+                        document.getElementById("progressBar").value = 100;
                         return;
                     }
                 }
                 
             } catch (error) {
                 document.getElementById("status").innerText = "Status: Error - " + error.message;
+                document.getElementById("progressBar").style.display = "none";
             }
         }
     </script>

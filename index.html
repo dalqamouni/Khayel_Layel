@@ -24,7 +24,7 @@
             const END_DATE = "2025-03-01T14:00:00.000Z";
             
             try {
-                let authResponse = await fetch(`https://login.${REGION}/oauth/token`, {
+                let authResponse = await fetch(`https://login.mypurecloud.${REGION}/oauth/token`, {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
                     body: `grant_type=client_credentials&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`
@@ -36,7 +36,7 @@
                 document.getElementById("status").innerText = "Status: Fetching Conversations...";
                 document.getElementById("progressBar").value = 30;
                 
-                let conversationsResponse = await fetch(`https://api.${REGION}/api/v2/analytics/conversations/details/query`, {
+                let conversationsResponse = await fetch(`https://api.mypurecloud.${REGION}/api/v2/analytics/conversations/details/query`, {
                     method: "POST",
                     headers: {
                         "Authorization": `Bearer ${accessToken}`,
@@ -49,7 +49,7 @@
                 let batchRequestList = [];
                 
                 for (let conversation of conversationsData.conversations) {
-                    let recordingsResponse = await fetch(`https://api.${REGION}/api/v2/conversations/${conversation.conversationId}/recordings`, {
+                    let recordingsResponse = await fetch(`https://api.mypurecloud.${REGION}/api/v2/conversations/${conversation.conversationId}/recordings`, {
                         headers: { "Authorization": `Bearer ${accessToken}` }
                     });
                     let recordingsData = await recordingsResponse.json();
@@ -65,7 +65,7 @@
                 document.getElementById("status").innerText = "Status: Requesting Batch Download...";
                 document.getElementById("progressBar").value = 50;
                 
-                let batchResponse = await fetch(`https://api.${REGION}/api/v2/recording/batchrequests`, {
+                let batchResponse = await fetch(`https://api.mypurecloud.${REGION}/api/v2/recording/batchrequests`, {
                     method: "POST",
                     headers: {
                         "Authorization": `Bearer ${accessToken}`,
@@ -79,7 +79,7 @@
                 let batchStatus = "Processing";
                 while (batchStatus === "Processing") {
                     await new Promise(r => setTimeout(r, 5000));
-                    let statusResponse = await fetch(`https://api.${REGION}/api/v2/recording/batchrequests/${batchId}`, {
+                    let statusResponse = await fetch(`https://api.mypurecloud.${REGION}/api/v2/recording/batchrequests/${batchId}`, {
                         headers: { "Authorization": `Bearer ${accessToken}` }
                     });
                     let statusData = await statusResponse.json();

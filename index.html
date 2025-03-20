@@ -1,122 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>حجوازات مطعم خبل و ليل</title>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-image: url("./Khayel_Layel.jpg");
-            background-size: contain; /* Ensure the entire image fits within the viewport */
-            background-position: top center; /* Align the image to the top center */
-            background-repeat: no-repeat;
-            min-height: 100vh; /* Ensure the body covers the entire viewport height */
-        }
-
-        .container {
-            width: 100%;
-            padding: 20px;
-            box-sizing: border-box;
-            color: white; /* Assuming text needs to be white for visibility on the background */
-        }
-
-        /* Mobile styles */
-        @media (max-width: 600px) {
-            .container {
-                padding: 10px;
-            }
-
-            h1 {
-                font-size: 1.5em;
-            }
-
-            p {
-                font-size: 1em;
-            }
-        }
-
-        /* Tablet styles */
-        @media (min-width: 601px) and (max-width: 900px) {
-            .container {
-                padding: 15px;
-            }
-
-            h1 {
-                font-size: 2em;
-            }
-
-            p {
-                font-size: 1.2em;
-            }
-        }
-
-        /* Desktop styles */
-        @media (min-width: 901px) {
-            .container {
-                padding: 20px;
-            }
-
-            h1 {
-                font-size: 2.5em;
-            }
-
-            p {
-                font-size: 1.5em;
-            }
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesys Cloud Recording Downloader</title>
 </head>
 <body>
-
-<div class="container">
-    <!-- Content goes here -->
-</div>
-
-<script type="text/javascript" charset="utf-8">
-  (function (g, e, n, es, ys) {
-    g['_genesysJs'] = e;
-    g[e] = g[e] || function () {
-      (g[e].q = g[e].q || []).push(arguments)
-    };
-    g[e].t = 1 * new Date();
-    g[e].c = es;
-    ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
-  })(window, 'Genesys', 'https://apps.mypurecloud.de/genesys-bootstrap/genesys.min.js', {
-    environment: 'prod-euc1',
-    deploymentId: 'a1ef8366-a748-4f4e-8211-7f1850691525'
-  });
-</script>
-
-<script>
-    // Function to detect if the device is mobile
-    function isMobileDevice() {
-        return /Mobi|Android|iPhone/i.test(navigator.userAgent);
-    }
-
-    // Apply specific styles or scripts based on the device
-    window.addEventListener('DOMContentLoaded', function() {
-        if (isMobileDevice()) {
-            document.body.style.backgroundColor = 'lightblue';
-            // Add any other mobile-specific functionality here
-        } else {
-            // Web-specific functionality
-            document.body.style.backgroundColor = '';
+    <h1>Genesys Cloud Recording Downloader</h1>
+    <button onclick="startDownload()">Download Recordings</button>
+    <p id="status">Status: Waiting</p>
+    
+    <script>
+        async function startDownload() {
+            document.getElementById("status").innerText = "Status: Authenticating...";
+            
+            const CLIENT_ID = "485e10e6-44be-4a4f-adf5-f4661cdaa335";
+            const CLIENT_SECRET = "dqakz-pDeRaekvSEVfFtz8dgbeLqHNdasIhEFOJpmG4";
+            const REGION = "eu-west-1"; // Example: "mypurecloud.ie"
+            const START_DATE = "2025-03-01T13:00:00.000Z";
+            const END_DATE = "2025-03-01T14:00:00.000Z";
+            
+            try {
+                // Step 1: Authenticate
+                let authResponse = await fetch(`https://login.${REGION}/oauth/token`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `grant_type=client_credentials&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`
+                });
+                
+                if (!authResponse.ok) throw new Error("Authentication failed");
+                let authData = await authResponse.json();
+                let accessToken = authData.access_token;
+                document.getElementById("status").innerText = "Status: Fetching Conversations...";
+                
+                // Step 2: Fetch Conversations
+                let conversationsResponse = await fetch(`https://api.${REGION}/api/v2/analytics/conversations/details/query`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ "interval": `${START_DATE}/${END_DATE}` })
+                });
+                
+                let conversationsData = await conversationsResponse.json();
+                let batchRequestList = [];
+                
+                for (let conversation of conversationsData.conversations) {
+                    let recordingsResponse = await fetch(`https://api.${REGION}/api/v2/conversations/${conversation.conversationId}/recordings`, {
+                        headers: { "Authorization": `Bearer ${accessToken}` }
+                    });
+                    let recordingsData = await recordingsResponse.json();
+                    
+                    for (let recording of recordingsData) {
+                        batchRequestList.push({
+                            conversationId: recording.conversationId,
+                            recordingId: recording.id
+                        });
+                    }
+                }
+                
+                document.getElementById("status").innerText = "Status: Requesting Batch Download...";
+                
+                // Step 3: Request Batch Download
+                let batchResponse = await fetch(`https://api.${REGION}/api/v2/recording/batchrequests`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ batchDownloadRequestList: batchRequestList })
+                });
+                let batchData = await batchResponse.json();
+                let batchId = batchData.id;
+                
+                // Step 4: Poll for Completion
+                let batchStatus = "Processing";
+                while (batchStatus === "Processing") {
+                    await new Promise(r => setTimeout(r, 5000)); // Wait 5 sec
+                    let statusResponse = await fetch(`https://api.${REGION}/api/v2/recording/batchrequests/${batchId}`, {
+                        headers: { "Authorization": `Bearer ${accessToken}` }
+                    });
+                    let statusData = await statusResponse.json();
+                    batchStatus = statusData.status;
+                    
+                    if (batchStatus === "Completed") {
+                        document.getElementById("status").innerText = "Status: Downloading...";
+                        for (let recording of statusData.results) {
+                            if (!recording.errorMsg) {
+                                window.open(recording.resultUrl, '_blank');
+                            }
+                        }
+                        document.getElementById("status").innerText = "Status: Completed";
+                        return;
+                    }
+                }
+                
+            } catch (error) {
+                document.getElementById("status").innerText = "Status: Error - " + error.message;
+            }
         }
-    });
-
-    // Example JavaScript to add mobile-specific functionality on resize
-    window.addEventListener('resize', function() {
-        if (isMobileDevice() || window.innerWidth < 600) {
-            document.body.style.backgroundColor = 'lightblue';
-        } else {
-            document.body.style.backgroundColor = '';
-        }
-    });
-</script>
-
+    </script>
 </body>
 </html>

@@ -1,120 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genesys Cloud Recording Downloader</title>
-</head>
-<body>
-    <h1>Genesys Cloud Recording Downloader</h1>
-    <button onclick="startDownload()">start Download Recordings</button>
-    <p id="status">Status: Waiting</p>
-    <progress id="progressBar" value="0" max="100" style="width:100%; display:none;"></progress>
-    
-    <script>
-        async function startDownload() {
-            document.getElementById("status").innerText = "Status: Authenticating...";
-            document.getElementById("progressBar").style.display = "block";
-            document.getElementById("progressBar").value = 10;
-            
-            const CLIENT_ID = "485e10e6-44be-4a4f-adf5-f4661cdaa335";
-            const CLIENT_SECRET = "dqakz-pDeRaekvSEVfFtz8dgbeLqHNdasIhEFOJpmG4";
-            const REGION = "ie";
-            const START_DATE = "2025-03-01T13:00:00.000Z";
-            const END_DATE = "2025-03-01T14:00:00.000Z";
-            
-            try {
-                let authResponse = await fetch(`https://login.mypurecloud.${REGION}/oauth/token`, {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "Authorization": "Basic NGQ0Mzc3NzEtY2EyMy00YzNmLWE0M2YtMWU4YWMwMDE4ZmZlOjZ4TEtJYzU2MGladFcyN2FETXpobGl4Qy1QWGt6MzVtanFvTHlOc1lXWm8=",
-                        "Access-Control-Allow-Origin":"*"
-                             },
-                    body: `grant_type=client_credentials`
-                });
-                
-                if (!authResponse.ok) throw new Error("Authentication failed");
-                let authData = await authResponse.json();
-                let accessToken = authData.access_token;
-                document.getElementById("status").innerText = "Status: Fetching Conversations...";
-                document.getElementById("progressBar").value = 30;
-                
-                let conversationsResponse = await fetch(`https://api.mypurecloud.${REGION}/api/v2/analytics/conversations/details/query`, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${accessToken}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ "interval": `${START_DATE}/${END_DATE}` })
-                });
-                
-                let conversationsData = await conversationsResponse.json();
-                let batchRequestList = [];
-                
-                for (let conversation of conversationsData.conversations) {
-                    let recordingsResponse = await fetch(`https://api.mypurecloud.${REGION}/api/v2/conversations/${conversation.conversationId}/recordings`, {
-                        headers: { "Authorization": `Bearer ${accessToken}` }
-                    });
-                    let recordingsData = await recordingsResponse.json();
-                    
-                    for (let recording of recordingsData) {
-                        batchRequestList.push({
-                            conversationId: recording.conversationId,
-                            recordingId: recording.id
-                        });
-                    }
+const express = require("express");
+const cors = require("cors");
+const axios = require("axios");
+
+const app = express();
+const PORT = 3000;
+
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+const CLIENT_ID = "485e10e6-44be-4a4f-adf5-f4661cdaa335";
+const CLIENT_SECRET = "dqakz-pDeRaekvSEVfFtz8dgbeLqHNdasIhEFOJpmG4";
+const REGION = "mypurecloud.ie"; // Change if needed
+
+// Generate Base64 Auth Token
+const authHeader = `Basic ${Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64")}`;
+
+// Endpoint to get an OAuth token
+app.post("/api/token", async (req, res) => {
+    try {
+        const response = await axios.post(
+            `https://login.${REGION}/oauth/token`,
+            "grant_type=client_credentials",
+            {
+                headers: {
+                    "Authorization": authHeader,
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
-                
-                document.getElementById("status").innerText = "Status: Requesting Batch Download...";
-                document.getElementById("progressBar").value = 50;
-                
-                let batchResponse = await fetch(`https://api.mypurecloud.${REGION}/api/v2/recording/batchrequests`, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${accessToken}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ batchDownloadRequestList: batchRequestList })
-                });
-                let batchData = await batchResponse.json();
-                let batchId = batchData.id;
-                
-                let batchStatus = "Processing";
-                while (batchStatus === "Processing") {
-                    await new Promise(r => setTimeout(r, 5000));
-                    let statusResponse = await fetch(`https://api.mypurecloud.${REGION}/api/v2/recording/batchrequests/${batchId}`, {
-                        headers: { "Authorization": `Bearer ${accessToken}` }
-                    });
-                    let statusData = await statusResponse.json();
-                    batchStatus = statusData.status;
-                    document.getElementById("progressBar").value = 75;
-                    
-                    if (batchStatus === "Completed") {
-                        document.getElementById("status").innerText = "Status: Downloading...";
-                        document.getElementById("progressBar").value = 90;
-                        
-                        for (let recording of statusData.results) {
-                            if (!recording.errorMsg) {
-                                let a = document.createElement("a");
-                                a.href = recording.resultUrl;
-                                a.download = "recording.mp3";
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                            }
-                        }
-                        document.getElementById("status").innerText = "Status: Download Complete";
-                        document.getElementById("progressBar").value = 100;
-                        return;
-                    }
-                }
-                
-            } catch (error) {
-                document.getElementById("status").innerText = "Status: Error - " + error.message;
-                document.getElementById("progressBar").style.display = "none";
             }
-        }
-    </script>
-</body>
-</html>
+        );
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ error: "Authentication failed", details: error.message });
+    }
+});
+
+// Endpoint to fetch conversation details
+app.post("/api/conversations", async (req, res) => {
+    try {
+        const { accessToken, startDate, endDate } = req.body;
+        const response = await axios.post(
+            `https://api.${REGION}/api/v2/analytics/conversations/details/query`,
+            { interval: `${startDate}/${endDate}` },
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch conversations", details: error.message });
+    }
+});
+
+// Endpoint to fetch recordings for a conversation
+app.post("/api/recordings", async (req, res) => {
+    try {
+        const { accessToken, conversationId } = req.body;
+        const response = await axios.get(
+            `https://api.${REGION}/api/v2/conversations/${conversationId}/recordings`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            }
+        );
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch recordings", details: error.message });
+    }
+});
+
+// Start server
+app.listen(PORT, () => console.log(`Proxy server running on http://localhost:${PORT}`));

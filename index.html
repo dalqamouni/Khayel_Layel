@@ -11,7 +11,7 @@
 
     <script>
         document.getElementById("downloadBtn").addEventListener("click", function() {
-            fetch("/recordings-downloader.js")
+            fetch("/recordings-downloader")
             .then(response => {
                 if (response.ok) {
                     return response.blob();

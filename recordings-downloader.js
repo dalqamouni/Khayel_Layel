@@ -19,9 +19,9 @@ const recordingApi = new platformClient.RecordingApi();
 
 // >> START recordings-downloader-step-1
 // Get client credentials from environment variables
-const CLIENT_ID = process.env.GENESYS_CLOUD_CLIENT_ID;
-const CLIENT_SECRET = process.env.GENESYS_CLOUD_CLIENT_SECRET;
-const ORG_REGION = process.env.GENESYS_CLOUD_REGION; // eg. us_east_1
+const CLIENT_ID = process.env.485e10e6-44be-4a4f-adf5-f4661cdaa335;
+const CLIENT_SECRET = process.env.dqakz-pDeRaekvSEVfFtz8dgbeLqHNdasIhEFOJpmG4;
+const ORG_REGION = process.env.env.eu-west-1; // eg. us_east_1
 
 // >> START recordings-downloader-step-2
 // Set environment
@@ -35,7 +35,7 @@ if(environment) client.setEnvironment(environment);
 client.loginClientCredentialsGrant(CLIENT_ID, CLIENT_SECRET)
 // >> END recordings-downloader-step-3
     .then(() => {
-        let dates = "2021-03-09T13:00:00.000Z/2021-03-10T00:00:00.000Z";
+        let dates = "2025-03-09T13:00:00.000Z/2025-03-09T13:05:00.000Z";
         downloadAllRecordings(dates);
     })
 

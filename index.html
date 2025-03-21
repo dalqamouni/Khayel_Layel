@@ -1,46 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genesys Recording Downloader</title>
-    <script defer src="script.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .progress-bar { width: 100%; background: #ccc; margin-top: 10px; }
-        .progress { width: 0%; height: 20px; background: green; text-align: center; color: white; }
-    </style>
-</head>
-<body>
-    <h2>Download Genesys Recordings</h2>
-    <form id="downloadForm">
-        <label for="startDate">Start Date:</label>
-        <input type="date" id="startDate" required>
-        
-        <label for="endDate">End Date:</label>
-        <input type="date" id="endDate" required>
-        
-        <label for="division">Division:</label>
-        <select id="division" required></select>
-        
-        <label for="user">User:</label>
-        <select id="user">
-            <option value="all">All</option>
-        </select>
-        
-        <label for="queue">Queue:</label>
-        <select id="queue">
-            <option value="all">All</option>
-        </select>
-        
-        <button type="button" onclick="selectSaveLocation()">Select Save Location</button>
-        <button type="submit">Start Download</button>
-    </form>
-    
-    <div class="progress-bar">
-        <div class="progress" id="progressBar">0%</div>
-    </div>
-    
-    <p id="status"></p>
-</body>
-</html>
+ConversationDetailQueryPredicate divisionPredicate = new ConversationDetailQueryPredicate();
+divisionPredicate.Dimension = ConversationDetailQueryPredicate.DimensionEnum.DivisionId;
+divisionPredicate.Value = "89c0e97b-f8c1-477a-ae0c-97f4ca394702";
+divisionPredicate.Type = ConversationDetailQueryPredicate.TypeEnum.Dimension;
+private static String ClientSecret;
+private static String dates = "2025-02-25T00:00:00.000Z/2025-02-25T23:59:00.000Z";
+private static String folderName = "2025-02-25";
+
+private static BatchDownloadJobSubmission batchRequestBody = new BatchDownloadJobSubmission();
+private static List<BatchDownloadRequest> batchDownloadRequestList = new List<BatchDownloadRequest>();
+
+static void Main(string[] args)
+{
+    authentication();
+
+    downloadAllRecordings(dates);
+    DownloadOutboundRecordings(dates);
+
+    // Final Output
+    Console.WriteLine("DONE");
+
+    if (Debugger.IsAttached)
+    {
+        Console.ReadKey();
+    }
+}
+
+static private void authentication()
+{
+    // OAuth
+    String clientId = "485e10e6-44be-4a4f-adf5-f4661cdaa335";
+    ClientSecret = "dqakz-pDeRaekvSEVfFtz8dgbeLqHNdasIhEFOJpmG4";
+
+    // orgRegion values example: eu-west-1
+    String region = "eu-west-1";
+
+    // Set Region
+    PureCloudRegionHosts region = PureCloudRegionHosts.eu-west-1;
+    Configuration.Default.ApiClient.setBasePath(region);
+}

@@ -1,101 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" integrity="sha256-MfvZlkHCEqatNoGiOXveE8FIwMzZg4W85qfrfIFBfYc= sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
-	<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-	<script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
-	<title>Aggregation Query</title>
-	<style type="text/css">
-
-	</style>
-	<script type="text/javascript">
-	// >> START analytics-conversation-aggregate-query
-
-		// This client ID expects the redirect URL to be http://localhost:8080/
-		const clientId = GENESYS_CLOUD_CLIENT_ID;
-		const redirectUri = window.location.href;
-
-		// Set Genesys Cloud objects
-		const platformClient = require('platformClient');
-		const client = platformClient.ApiClient.instance;
-		const analyticsapi = new platformClient.AnalyticsApi();
-		const routingapi = new platformClient.RoutingApi();
-
-		// Set Genesys Cloud settings
-		client.setEnvironment('mypurecloud.com');
-		client.setPersistSettings(true, 'test_app');
-
-		$(document).ready(function() {
-			// Authenticate with Genesys Cloud
-			client.loginImplicitGrant(clientId, redirectUri)
-				.then(() => {
-					console.log('Logged in');
-
-					// Get "Support" queue by name
-					return routingapi.getRoutingQueues({ name: 'Support' });
-				})
-				.then((queueData) => {
-					// Store queue ID
-					console.log('queueData: ', queueData);
-					const queueId = queueData.entities[0].id;
-
-					// Build analytics query
-                    // >> START analytics-conversation-aggregate-query-step-1
-					let query = {
-						interval : getIntervalString(),
-                        // >> START analytics-conversation-aggregate-query-step-3
-						groupBy: ['queueId'],
-                        // >> END analytics-conversation-aggregate-query-step-3
-                        // >> START analytics-conversation-aggregate-query-step-4
-						metrics : ['nOffered','tAnswered','tTalk'],
-                        // >> END analytics-conversation-aggregate-query-step-4
-                        // >> START analytics-conversation-aggregate-query-step-5
-						filter :{
-							type: 'and',
-							clauses: [
-								{
-									type: 'or',
-									predicates:[
-										{
-											dimension : 'queueId',
-											value: queueId
-										}
-									]
-								}
-							]
-						}
-					};
-                    // >> END analytics-conversation-aggregate-query-step-5
-                    // >> END analytics-conversation-aggregate-query-step-1
-					console.log('query: ', query);
-					
-                    // >> START analytics-conversation-aggregate-query-step-6
-					// Execute analytics query
-					return analyticsapi.postAnalyticsConversationsAggregatesQuery(query);
-				})
-				.then((queryResult) => {
-					// Display analytics results
-					console.log('queryResult: ', queryResult);
-					$('#results').text(JSON.stringify(queryResult, null, 2));
-				})
-                    // >> END analytics-conversation-aggregate-query-step-6
-				.catch((err) => console.error(err));
-		});
-
-        // >> START analytics-conversation-aggregate-query-step-2
-		// Gets an ISO-8601 interval from now for the last 7 days
-		function getIntervalString() {
-			let end = new Date();
-			let start = new Date();
-			start.setDate(end.getDate() - 7);
-
-			return start.toISOString() + '/' + end.toISOString();
-		}
-        // >> END analytics-conversation-aggregate-query-step-2
-	// >> END analytics-conversation-aggregate-query
-	</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesys Recording Downloader</title>
+    <script defer src="script.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .progress-bar { width: 100%; background: #ccc; margin-top: 10px; }
+        .progress { width: 0%; height: 20px; background: green; text-align: center; color: white; }
+    </style>
 </head>
 <body>
-	<pre id="results"></pre>
+    <h2>Download Genesys Recordings</h2>
+    <form id="downloadForm">
+        <label for="startDate">Start Date:</label>
+        <input type="date" id="startDate" required>
+        
+        <label for="endDate">End Date:</label>
+        <input type="date" id="endDate" required>
+        
+        <label for="division">Division:</label>
+        <select id="division" required></select>
+        
+        <label for="user">User:</label>
+        <select id="user">
+            <option value="all">All</option>
+        </select>
+        
+        <label for="queue">Queue:</label>
+        <select id="queue">
+            <option value="all">All</option>
+        </select>
+        
+        <button type="button" onclick="selectSaveLocation()">Select Save Location</button>
+        <button type="submit">Start Download</button>
+    </form>
+    
+    <div class="progress-bar">
+        <div class="progress" id="progressBar">0%</div>
+    </div>
+    
+    <p id="status"></p>
 </body>
 </html>
